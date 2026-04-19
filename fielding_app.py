@@ -49,14 +49,20 @@ def add_entry(contact=0, fumble="None", target="None", quality="None", saved=0, 
         'Opportunity_Availed': availed
     }
     
-    # Update local session state (the table on screen)
+    # Update local session table
     st.session_state.logs = pd.concat([st.session_state.logs, pd.DataFrame([new_row])], ignore_index=True)
     
-    # CLOUD UPDATE: This is the critical fix
+    # CLOUD UPDATE: Read existing, append new, then update
     try:
-        # worksheet="Sheet1" forces it into your existing tab
-        # Use the data directly as a list of dictionaries
-        conn.create(data=[new_row], worksheet="Sheet1") 
+        # 1. Pull current data from the sheet
+        existing_data = conn.read(worksheet="Sheet1", ttl=0)
+        
+        # 2. Append the new row
+        updated_df = pd.concat([existing_data, pd.DataFrame([new_row])], ignore_index=True)
+        
+        # 3. Push back to Google Sheets
+        conn.update(worksheet="Sheet1", data=updated_df)
+        
         st.toast(f"✅ Cloud Synced: {selected_name}")
     except Exception as e:
         st.error(f"Google Sheets Error: {e}")
