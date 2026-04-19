@@ -95,6 +95,42 @@ with col_result:
     if st.button("☝️ RUN OUT", use_container_width=True):
         add_entry(contact=1, availed=1)
 
-# --- 6. DATA VIEW ---
+# --- 6. LEADERBOARD TOGGLE ---
 st.divider()
-st.dataframe(st.session_state.logs.tail(5), use_container_width=True)
+
+# Creating a button that stays active when clicked
+if st.button("📊 VIEW LIVE SQUAD STATS", use_container_width=True):
+    st.subheader("Current Session Leaderboard")
+    try:
+        # Pull the fresh data from Cloud
+        cloud_data = conn.read(worksheet="Sheet1", ttl=0)
+        
+        if not cloud_data.empty:
+            # Create the summary
+            summary = cloud_data.groupby("Player").agg({
+                'Ball_Contact': 'sum',
+                'Runs_Saved': 'sum',
+                'Stumps_Hit': 'sum',
+                'Opportunity_Availed': 'sum'
+            }).rename(columns={
+                'Ball_Contact': 'Touches',
+                'Runs_Saved': 'Saved',
+                'Stumps_Hit': 'Hits',
+                'Opportunity_Availed': 'Chances'
+            })
+            
+            # Display the table
+            st.table(summary) # 'st.table' is static and looks cleaner on mobile
+            
+            # Highlight the top performer
+            top_fielder = summary['Saved'].idxmax()
+            st.success(f"🌟 Leading Fielder: **{top_fielder}**")
+        else:
+            st.info("No data logged yet.")
+            
+    except Exception as e:
+        st.error(f"Could not load stats: {e}")
+
+# Raw logs remain hidden for your use
+with st.expander("Admin: See Raw Match Logs"):
+    st.dataframe(st.session_state.logs.tail(5), use_container_width=True)
