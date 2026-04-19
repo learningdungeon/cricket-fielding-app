@@ -15,7 +15,7 @@ SQUAD = {
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 # Test line to see if secrets are working
-st.write("Target Sheet:", conn.spreadsheet)
+#st.write("Target Sheet:", conn.spreadsheet)
 
 if 'logs' not in st.session_state:
     st.session_state.logs = pd.DataFrame(columns=[
