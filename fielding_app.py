@@ -1,4 +1,3 @@
-st.write("Is connected:", conn.spreadsheet)
 import streamlit as st
 import pandas as pd
 from datetime import datetime
@@ -15,6 +14,9 @@ SQUAD = {
 # --- 2. GOOGLE SHEETS CONNECTION ---
 conn = st.connection("gsheets", type=GSheetsConnection)
 
+# Test line to see if secrets are working
+st.write("Target Sheet:", conn.spreadsheet)
+
 if 'logs' not in st.session_state:
     st.session_state.logs = pd.DataFrame(columns=[
         'Timestamp', 'Player', 'Shirt_No', 'Ball_Contact', 'Fumble_Type', 
@@ -22,7 +24,7 @@ if 'logs' not in st.session_state:
         'Stumps_Hit', 'Opportunity_Availed'
     ])
 
-# --- 3. SIDEBAR: PLAYER SELECTION ---
+# --- 3. SIDEBAR ---
 st.sidebar.header("🏆 Squad List")
 if 'active_player' not in st.session_state:
     st.session_state.active_player = "David Miller"
@@ -34,10 +36,10 @@ for player in SQUAD.keys():
 selected_name = st.session_state.active_player
 selected_shirt = SQUAD[selected_name]
 
-# --- 4. LOGGING FUNCTION (Cloud + Local) ---
+# --- 4. LOGGING FUNCTION ---
 def add_entry(contact=0, fumble="None", target="None", quality="None", saved=0, given=0, hit=0, availed=0):
     new_row = {
-        'Timestamp': datetime.now().strftime("%Y-%m-%S %H:%M:%S"),
+        'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         'Player': selected_name,
         'Shirt_No': selected_shirt,
         'Ball_Contact': contact,
@@ -50,15 +52,16 @@ def add_entry(contact=0, fumble="None", target="None", quality="None", saved=0, 
         'Opportunity_Availed': availed
     }
     
-    # 1. Update Local Session (for the screen)
     st.session_state.logs = pd.concat([st.session_state.logs, pd.DataFrame([new_row])], ignore_index=True)
     
-    # 2. Update Cloud (Google Sheets)
     try:
         conn.create(data=[new_row])
         st.toast(f"✅ Cloud Synced: {selected_name}")
     except Exception as e:
-        st.error("Cloud Sync Failed - Data only saved locally.")
+        # THIS WILL TELL US THE EXACT PROBLEM
+        st.error(f"Google Sheets Error: {e}")
+
+
 
 # --- 5. MAIN UI ---
 st.title(f"🏏 Tracking: {selected_name} (#{selected_shirt})")
