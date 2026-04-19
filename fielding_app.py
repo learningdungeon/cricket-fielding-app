@@ -14,7 +14,6 @@ SQUAD = {
 # --- 2. GOOGLE SHEETS CONNECTION ---
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-# Initialize logs in session state with the new 'Direction' column
 if 'logs' not in st.session_state:
     st.session_state.logs = pd.DataFrame(columns=[
         'Timestamp', 'Player', 'Shirt_No', 'Direction', 'Ball_Contact', 
@@ -35,7 +34,6 @@ selected_name = st.session_state.active_player
 selected_shirt = SQUAD[selected_name]
 
 # --- 4. LOGGING FUNCTION ---
-# Updated to include 'direction'
 def add_entry(direction="Cover", contact=0, fumble="None", target="None", quality="None", saved=0, given=0, hit=0, availed=0):
     new_row = {
         'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -52,29 +50,40 @@ def add_entry(direction="Cover", contact=0, fumble="None", target="None", qualit
         'Opportunity_Availed': availed
     }
     
-    # Update local session table
     st.session_state.logs = pd.concat([st.session_state.logs, pd.DataFrame([new_row])], ignore_index=True)
     
-    # CLOUD UPDATE
     try:
         existing_data = conn.read(worksheet="Sheet1", ttl=0)
         updated_df = pd.concat([existing_data, pd.DataFrame([new_row])], ignore_index=True)
         conn.update(worksheet="Sheet1", data=updated_df)
-        st.toast(f"✅ Cloud Synced: {selected_name} at {direction}")
+        st.toast(f"✅ Synced: {selected_name} @ {direction}")
     except Exception as e:
         st.error(f"Google Sheets Error: {e}")
 
 # --- 5. MAIN UI ---
 st.title(f"🏏 Tracking: {selected_name} (#{selected_shirt})")
 
-# Wagon Wheel Selector
-st.subheader("📍 Ball Direction (Wagon Wheel)")
-field_direction = st.select_slider(
-    "Select the zone where the ball was hit:",
-    options=["Third Man", "Point", "Cover", "Mid-Off", "Mid-On", "Mid-Wicket", "Square Leg", "Fine Leg"],
-    value="Cover"
-)
+st.subheader("📍 Wagon Wheel: Select Zone")
+# Creating a layout that mimics the field
+col_off, col_pitch, col_leg = st.columns([1, 0.4, 1])
 
+with col_off:
+    off_zone = st.radio("Off-Side", ["Third Man", "Point", "Cover", "Mid-Off"], index=2)
+
+with col_pitch:
+    st.markdown("<h1 style='text-align: center; margin:0;'>🏏</h1>", unsafe_allow_html=True)
+    st.caption("<p style='text-align: center;'>Pitch</p>", unsafe_allow_html=True)
+
+with col_leg:
+    leg_zone = st.radio("Leg-Side", ["Fine Leg", "Square Leg", "Mid-Wicket", "Mid-On"], index=2)
+
+# Toggle to decide which zone is currently 'active'
+side = st.radio("Side in Play", ["Off", "Leg"], horizontal=True)
+field_direction = off_zone if side == "Off" else leg_zone
+
+st.info(f"Current Zone: **{field_direction}**")
+
+# --- ACTION BUTTONS ---
 col_pick, col_throw, col_result = st.columns(3)
 
 with col_pick:
