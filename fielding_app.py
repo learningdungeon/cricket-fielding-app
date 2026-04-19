@@ -14,9 +14,6 @@ SQUAD = {
 # --- 2. GOOGLE SHEETS CONNECTION ---
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-# Test line to see if secrets are working
-#st.write("Target Sheet:", conn.spreadsheet)
-
 if 'logs' not in st.session_state:
     st.session_state.logs = pd.DataFrame(columns=[
         'Timestamp', 'Player', 'Shirt_No', 'Ball_Contact', 'Fumble_Type', 
@@ -24,7 +21,7 @@ if 'logs' not in st.session_state:
         'Stumps_Hit', 'Opportunity_Availed'
     ])
 
-# --- 3. SIDEBAR ---
+# --- 3. SIDEBAR: PLAYER SELECTION ---
 st.sidebar.header("🏆 Squad List")
 if 'active_player' not in st.session_state:
     st.session_state.active_player = "David Miller"
@@ -52,16 +49,17 @@ def add_entry(contact=0, fumble="None", target="None", quality="None", saved=0, 
         'Opportunity_Availed': availed
     }
     
+    # Update local session state (the table on screen)
     st.session_state.logs = pd.concat([st.session_state.logs, pd.DataFrame([new_row])], ignore_index=True)
     
+    # CLOUD UPDATE: This is the critical fix
     try:
-        conn.create(data=[new_row])
+        # worksheet="Sheet1" forces it into your existing tab
+        # Use the data directly as a list of dictionaries
+        conn.create(data=[new_row], worksheet="Sheet1") 
         st.toast(f"✅ Cloud Synced: {selected_name}")
     except Exception as e:
-        # THIS WILL TELL US THE EXACT PROBLEM
         st.error(f"Google Sheets Error: {e}")
-
-
 
 # --- 5. MAIN UI ---
 st.title(f"🏏 Tracking: {selected_name} (#{selected_shirt})")
