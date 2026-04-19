@@ -119,14 +119,14 @@ if st.button("📊 SHOW LEADERBOARD", use_container_width=True):
                 'Opportunity_Availed': 'Chances'
             })
             
-            # Display as a clean, static table (best for mobile)
+            # Display as a clean, static table
             st.table(leaderboard)
             
-            # A little bit of "AI partner" flair for the coach
+            # Highlight top performer
             best_saved = leaderboard['Saved'].idxmax()
             st.success(f"🔥 Most Runs Saved: **{best_saved}**")
         else:
             st.info("The leaderboard is empty. Start logging to see results!")
             
     except Exception as e:
-        st.error("Stats temporarily unavailable. Please keep logging.")ue)
+        st.error("Stats temporarily unavailable. Please keep logging.")
