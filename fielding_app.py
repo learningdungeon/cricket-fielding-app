@@ -95,42 +95,38 @@ with col_result:
     if st.button("☝️ RUN OUT", use_container_width=True):
         add_entry(contact=1, availed=1)
 
-# --- 6. LEADERBOARD TOGGLE ---
+# --- 6. STATS BUTTON ---
 st.divider()
 
-# Creating a button that stays active when clicked
-if st.button("📊 VIEW LIVE SQUAD STATS", use_container_width=True):
-    st.subheader("Current Session Leaderboard")
+# A big, clear button for the coach
+if st.button("📊 SHOW LEADERBOARD", use_container_width=True):
+    st.subheader("Live Session Summary")
     try:
-        # Pull the fresh data from Cloud
-        cloud_data = conn.read(worksheet="Sheet1", ttl=0)
+        # Fetch fresh cloud data
+        summary_df = conn.read(worksheet="Sheet1", ttl=0)
         
-        if not cloud_data.empty:
-            # Create the summary
-            summary = cloud_data.groupby("Player").agg({
+        if not summary_df.empty:
+            # Aggregate the stats by player name
+            leaderboard = summary_df.groupby("Player").agg({
                 'Ball_Contact': 'sum',
                 'Runs_Saved': 'sum',
                 'Stumps_Hit': 'sum',
                 'Opportunity_Availed': 'sum'
             }).rename(columns={
-                'Ball_Contact': 'Touches',
+                'Ball_Contact': 'Picks',
                 'Runs_Saved': 'Saved',
                 'Stumps_Hit': 'Hits',
                 'Opportunity_Availed': 'Chances'
             })
             
-            # Display the table
-            st.table(summary) # 'st.table' is static and looks cleaner on mobile
+            # Display as a clean, static table (best for mobile)
+            st.table(leaderboard)
             
-            # Highlight the top performer
-            top_fielder = summary['Saved'].idxmax()
-            st.success(f"🌟 Leading Fielder: **{top_fielder}**")
+            # A little bit of "AI partner" flair for the coach
+            best_saved = leaderboard['Saved'].idxmax()
+            st.success(f"🔥 Most Runs Saved: **{best_saved}**")
         else:
-            st.info("No data logged yet.")
+            st.info("The leaderboard is empty. Start logging to see results!")
             
     except Exception as e:
-        st.error(f"Could not load stats: {e}")
-
-# Raw logs remain hidden for your use
-with st.expander("Admin: See Raw Match Logs"):
-    st.dataframe(st.session_state.logs.tail(5), use_container_width=True)
+        st.error("Stats temporarily unavailable. Please keep logging.")ue)
